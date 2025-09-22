@@ -12,16 +12,23 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "queue:dashboard": "echo 'Queue dashboard available at: http://localhost:3000/admin/queues'"
   },
   "dependencies": {
+    "@bull-board/api": "^6.13.0",
+    "@bull-board/hono": "^6.13.0",
+    "@bull-board/ui": "^6.13.0",
     "@hono/node-server": "^1.4.0",
+    "bullmq": "^5.58.7",
     "drizzle-kit": "^0.31.4",
     "drizzle-orm": "^0.44.5",
     "hono": "^4.0.0",
+    "ioredis": "^5.7.0",
     "pg": "^8.16.3"
   },
   "devDependencies": {
+    "@types/ioredis": "^5.0.0",
     "@types/node": "^20.10.0",
     "@types/pg": "^8.15.5",
     "tsx": "^4.7.0",

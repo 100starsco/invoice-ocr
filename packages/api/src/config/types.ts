@@ -16,6 +16,38 @@ export interface DatabaseConfig {
   }
 }
 
+export interface QueueConfig {
+  redis: {
+    host: string
+    port: number
+    password?: string
+    db: number
+  }
+  queues: {
+    imageProcessing: string
+    ocrRequest: string
+    notification: string
+  }
+  defaultJobOptions: {
+    removeOnComplete: number
+    removeOnFail: number
+    attempts: number
+    backoff: {
+      type: 'exponential'
+      delay: number
+    }
+  }
+  concurrency: {
+    imageProcessing: number
+    ocrRequest: number
+    notification: number
+  }
+  dashboard: {
+    enabled: boolean
+    path: string
+  }
+}
+
 export interface ServiceConfig {
   ocrServiceUrl: string
 }
@@ -36,5 +68,6 @@ export interface ApiConfig {
   server: ServerConfig
   line: LineConfig
   database: DatabaseConfig
+  queue: QueueConfig
   services: ServiceConfig
 }

@@ -45,6 +45,39 @@ export function validateConfig(config: ApiConfig): void {
   validateUrl('MONGODB_URI', config.database.mongodb.uri)
   validateUrl('REDIS_URL', config.database.redis.url)
 
+  // Validate queue configuration
+  if (!config.queue.redis.host) {
+    throw new Error('Queue Redis host is required')
+  }
+  if (config.queue.redis.port < 1 || config.queue.redis.port > 65535) {
+    throw new Error(`Invalid queue Redis port: ${config.queue.redis.port}`)
+  }
+  if (config.queue.redis.db < 0) {
+    throw new Error(`Invalid queue Redis DB: ${config.queue.redis.db}`)
+  }
+
+  // Validate queue names
+  if (!config.queue.queues.imageProcessing) {
+    throw new Error('Image processing queue name is required')
+  }
+  if (!config.queue.queues.ocrRequest) {
+    throw new Error('OCR request queue name is required')
+  }
+  if (!config.queue.queues.notification) {
+    throw new Error('Notification queue name is required')
+  }
+
+  // Validate concurrency settings
+  if (config.queue.concurrency.imageProcessing < 1) {
+    throw new Error('Image processing concurrency must be positive')
+  }
+  if (config.queue.concurrency.ocrRequest < 1) {
+    throw new Error('OCR request concurrency must be positive')
+  }
+  if (config.queue.concurrency.notification < 1) {
+    throw new Error('Notification concurrency must be positive')
+  }
+
   // Validate service URLs
   validateUrl('OCR_SERVICE_URL', config.services.ocrServiceUrl)
 

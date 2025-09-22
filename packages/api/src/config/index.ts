@@ -2,6 +2,7 @@ import { environmentConfig } from './environment'
 import { serverConfig } from './server'
 import { lineConfig } from './line'
 import { databaseConfig } from './database'
+import { queueConfig } from './queue'
 import { serviceConfig } from './services'
 import { validateConfig } from './validator'
 import type { ApiConfig } from './types'
@@ -11,6 +12,7 @@ export const config: ApiConfig = {
   server: serverConfig,
   line: lineConfig,
   database: databaseConfig,
+  queue: queueConfig,
   services: serviceConfig
 }
 
