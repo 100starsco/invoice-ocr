@@ -5,6 +5,7 @@ export interface LiffConfig {
 
 export interface ApiConfig {
   baseUrl: string
+  timeout: number
 }
 
 export interface EnvironmentConfig {
