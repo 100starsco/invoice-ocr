@@ -5,6 +5,7 @@
   "description": "Invoice OCR system with LINE integration",
   "scripts": {
     "dev": "pnpm -r --parallel dev",
+    "dev:admin": "pnpm --filter @invoice-ocr/admin dev",
     "build": "pnpm -r build",
     "test": "pnpm -r test",
     "lint": "pnpm -r lint",

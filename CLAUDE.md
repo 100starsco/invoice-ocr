@@ -34,6 +34,27 @@ This project uses **pnpm workspaces** for managing multiple packages in a monore
      - Editable forms for correcting extracted data
      - Save corrected results via API
 
+1.5. **Admin Dashboard (Vue.js + DaisyUI)**
+   - Location: `packages/admin/`
+   - Vue 3 SPA with Composition API and TypeScript
+   - **TailwindCSS v4 with DaisyUI v4** for modern UI components
+   - **Protected Routes** with authentication guards
+   - **Features**:
+     - Admin authentication with JWT tokens
+     - Responsive layout with collapsible sidebar
+     - Dashboard overview with system statistics
+     - User management (LINE users)
+     - Invoice/OCR results management
+     - Job queue monitoring
+     - Message history management
+     - System settings and configuration
+     - Multi-theme support (light, dark, corporate, business, custom admin theme)
+   - **Authentication Flow**:
+     - JWT-based admin authentication
+     - Protected routes requiring valid tokens
+     - Automatic token validation and refresh
+     - Session persistence with localStorage
+
 2. **Main API Service (Node.js + Hono)**
    - Location: `packages/api/`
    - Handles LINE webhook events
@@ -150,6 +171,26 @@ pnpm --filter @invoice-ocr/web lint:fix
 
 # Type checking
 pnpm --filter @invoice-ocr/web typecheck
+```
+
+### Admin Dashboard (packages/admin)
+```bash
+# Development server with hot reload (runs on port 5174)
+pnpm --filter @invoice-ocr/admin dev
+# or
+pnpm dev:admin
+
+# Build for production
+pnpm --filter @invoice-ocr/admin build
+
+# Preview production build
+pnpm --filter @invoice-ocr/admin preview
+
+# Type checking
+pnpm --filter @invoice-ocr/admin typecheck
+
+# Linting
+pnpm --filter @invoice-ocr/admin lint
 ```
 
 ### Shared Package (packages/shared)
@@ -295,6 +336,36 @@ invoice-ocr/
 │   │   ├── index.html
 │   │   ├── vite.config.ts
 │   │   ├── tailwind.config.ts  # With DaisyUI plugin
+│   │   ├── package.json
+│   │   └── tsconfig.json
+│   ├── admin/               # Admin dashboard
+│   │   ├── src/
+│   │   │   ├── views/       # Page components
+│   │   │   │   ├── Login.vue       # Admin login
+│   │   │   │   ├── Dashboard.vue   # Overview dashboard
+│   │   │   │   ├── Users.vue       # User management
+│   │   │   │   ├── Invoices.vue    # Invoice management
+│   │   │   │   ├── Jobs.vue        # Job queue monitoring
+│   │   │   │   ├── Messages.vue    # Message management
+│   │   │   │   ├── Settings.vue    # System settings
+│   │   │   │   └── NotFound.vue    # 404 page
+│   │   │   ├── layouts/     # Layout components
+│   │   │   │   └── DefaultLayout.vue  # Main layout with sidebar
+│   │   │   ├── components/  # Reusable components
+│   │   │   │   ├── Sidebar.vue     # Navigation sidebar
+│   │   │   │   └── Header.vue      # Top header
+│   │   │   ├── router/      # Vue Router configuration
+│   │   │   │   └── index.ts        # Routes with auth guards
+│   │   │   ├── stores/      # Pinia stores
+│   │   │   │   └── auth.ts         # Authentication store
+│   │   │   ├── api/         # API client
+│   │   │   ├── App.vue
+│   │   │   ├── main.ts
+│   │   │   └── style.css    # TailwindCSS imports
+│   │   ├── public/
+│   │   ├── index.html
+│   │   ├── vite.config.ts
+│   │   ├── tailwind.config.ts  # Custom admin theme
 │   │   ├── package.json
 │   │   └── tsconfig.json
 │   ├── api/                 # Main API service
