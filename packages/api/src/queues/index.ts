@@ -8,7 +8,7 @@ const redis = new Redis({
   port: config.queue.redis.port,
   password: config.queue.redis.password,
   db: config.queue.redis.db,
-  maxRetriesPerRequest: 3,
+  maxRetriesPerRequest: null, // Required for BullMQ
   enableReadyCheck: true,
   lazyConnect: true
 })

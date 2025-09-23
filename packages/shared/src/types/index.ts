@@ -3,3 +3,5 @@ export interface HealthCheck {
   service: string
   timestamp: string
 }
+
+export * from './line'
