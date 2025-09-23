@@ -1,5 +1,10 @@
 <template>
-  <div class="min-h-screen bg-base-200 flex items-center justify-center p-4">
+  <div class="min-h-screen bg-base-200 flex items-center justify-center p-4 relative">
+    <!-- Theme Switcher in top-right corner -->
+    <div class="absolute top-4 right-4 z-10">
+      <ThemeSwitcher />
+    </div>
+
     <div class="w-full max-w-md">
       <div class="card bg-base-100 shadow-2xl">
         <div class="card-body">
@@ -143,6 +148,7 @@
 import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import ThemeSwitcher from '@/components/ThemeSwitcher.vue'
 
 const router = useRouter()
 const route = useRoute()
