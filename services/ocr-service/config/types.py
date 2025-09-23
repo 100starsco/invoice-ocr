@@ -33,6 +33,8 @@ class MonitoringConfig:
 @dataclass
 class EnvironmentConfig:
     env: str
+    node_env: str
+    port: Optional[int] = 8001
     debug: bool = False
     is_production: bool = False
     is_development: bool = False

@@ -2,3 +2,27 @@ fastapi==0.115.0
 uvicorn[standard]==0.30.0
 python-dotenv==1.0.0
 pydantic==2.9.2
+
+# OCR Dependencies
+paddleocr>=2.7.0
+opencv-python>=4.8.0
+Pillow>=10.0.0
+numpy>=1.24.0
+
+# Queue System
+redis>=5.0.0
+rq>=1.15.0
+rq-dashboard>=0.6.0
+
+# Database
+pymongo>=4.5.0
+motor>=3.3.0
+
+# File Handling
+python-multipart>=0.0.6
+aiofiles>=23.0.0
+
+# Development & Testing
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+httpx>=0.24.0
