@@ -8,26 +8,33 @@ import { HonoAdapter } from '@bull-board/hono'
 import { config } from './config'
 import { queues } from './queues'
 import { webhook } from './routes/webhook'
-// import './workers/line-message'  // Disable worker for testing
+import { admin } from './routes/admin'
+import './workers/line-event'  // Enable LINE event worker
+import './workers/line-message-incoming'  // Enable LINE incoming message worker
+import './workers/line-follow'  // Enable LINE follow worker
+import './workers/line-user'  // Enable LINE user management worker
 
 const app = new Hono()
 
 app.use('*', cors())
 
-// Setup Bull Board Dashboard
-// TODO: Fix HonoAdapter configuration
+// Setup Bull Board Dashboard (disabled for now due to compatibility issues)
 // if (config.queue.dashboard.enabled) {
 //   const serverAdapter = new HonoAdapter()
+
 //   createBullBoard({
 //     queues: queues.map(queue => new BullMQAdapter(queue)),
 //     serverAdapter: serverAdapter
 //   })
-//   serverAdapter.setBasePath(config.queue.dashboard.path)
-//   app.route(config.queue.dashboard.path, serverAdapter)
+
+//   app.mount(config.queue.dashboard.path, serverAdapter.getApp())
 //   console.log(`Queue dashboard available at: http://localhost:${config.server.port}${config.queue.dashboard.path}`)
 // }
 
-app.get('/health', (c) => {
+// API routes with /api prefix
+const api = new Hono()
+
+api.get('/health', (c) => {
   return c.json({
     status: 'healthy',
     service: 'api',
@@ -39,15 +46,22 @@ app.get('/health', (c) => {
 })
 
 // LINE webhook routes
-app.route(config.line.webhookPath, webhook)
+api.route('/webhook', webhook)
+
+// Admin routes
+api.route('/admin', admin)
+
+// Mount API routes with /api prefix
+app.route('/api', api)
 
 app.get('/', (c) => {
   return c.json({
     message: 'Invoice OCR API',
     version: '1.0.0',
     endpoints: {
-      health: '/health',
-      webhook: config.line.webhookPath
+      health: '/api/health',
+      webhook: '/api/webhook',
+      admin: '/api/admin'
     }
   })
 })
@@ -58,4 +72,5 @@ serve({
 })
 
 console.log(`API server running on http://localhost:${config.server.port}`)
-console.log(`Health check available at http://localhost:${config.server.port}/health`)
+console.log(`Health check available at http://localhost:${config.server.port}/api/health`)
+console.log(`Admin endpoints available at http://localhost:${config.server.port}/api/admin`)

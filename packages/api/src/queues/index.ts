@@ -29,11 +29,35 @@ export const notificationQueue = new Queue(config.queue.queues.notification, {
   defaultJobOptions: config.queue.defaultJobOptions
 })
 
+export const lineEventQueue = new Queue('line-events', {
+  connection: redis,
+  defaultJobOptions: config.queue.defaultJobOptions
+})
+
+export const lineMessageQueue = new Queue('line-messages', {
+  connection: redis,
+  defaultJobOptions: config.queue.defaultJobOptions
+})
+
+export const lineFollowQueue = new Queue('line-follow', {
+  connection: redis,
+  defaultJobOptions: config.queue.defaultJobOptions
+})
+
+export const lineUserQueue = new Queue('line-user-management', {
+  connection: redis,
+  defaultJobOptions: config.queue.defaultJobOptions
+})
+
 // Export all queues for dashboard
 export const queues = [
   imageProcessingQueue,
   ocrRequestQueue,
-  notificationQueue
+  notificationQueue,
+  lineEventQueue,
+  lineMessageQueue,
+  lineFollowQueue,
+  lineUserQueue
 ]
 
 // Handle Redis connection events

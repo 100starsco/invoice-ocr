@@ -1,8 +1,9 @@
 import { Hono } from 'hono'
-import type { LineWebhookBody, LineEvent, LineMessageEvent } from '@invoice-ocr/shared'
+import type { LineWebhookBody, LineEvent } from '@invoice-ocr/shared'
 import { LineMessagingService } from '../services/line'
+import { JobTrackingService } from '../services/job-tracker'
 import { config } from '../config'
-import { messageHandler } from '../handlers/message'
+import { lineEventQueue, lineMessageQueue, lineFollowQueue, lineUserQueue } from '../queues'
 
 const webhook = new Hono()
 
@@ -47,13 +48,63 @@ webhook.post('/', async (c) => {
 
     console.log(`Received ${webhookBody.events.length} LINE events`)
 
-    // Process each event
+    // Queue each event for processing to the appropriate specialized queue
     for (const event of webhookBody.events) {
       try {
-        await processEvent(event)
+        let targetQueue
+        let queueName
+
+        // Route events to specialized queues
+        switch (event.type) {
+          case 'message':
+            targetQueue = lineMessageQueue
+            queueName = 'line-messages'
+            break
+          case 'follow':
+          case 'unfollow':
+            targetQueue = lineFollowQueue
+            queueName = 'line-follow'
+            break
+          case 'join':
+          case 'leave':
+            targetQueue = lineUserQueue
+            queueName = 'line-user-management'
+            break
+          default:
+            // Fall back to general LINE event queue for other event types
+            targetQueue = lineEventQueue
+            queueName = 'line-events'
+        }
+
+        const job = await targetQueue.add(
+          `line-event-${event.type}`,
+          {
+            event,
+            timestamp: Date.now(),
+            webhookId: webhookBody.destination
+          },
+          {
+            attempts: 3,
+            backoff: {
+              type: 'exponential',
+              delay: 2000
+            },
+            priority: event.type === 'message' ? 10 : 5 // Higher priority for messages
+          }
+        )
+
+        // Track job and event in database
+        const trackedJob = await JobTrackingService.trackBullMQJob(job, queueName)
+        const trackedEvent = await JobTrackingService.trackLineEvent({
+          event,
+          webhookId: webhookBody.destination,
+          jobId: trackedJob.id
+        })
+
+        console.log(`Queued LINE event: ${event.type} to ${queueName} (Job ID: ${job.id}, Event ID: ${trackedEvent.id})`)
       } catch (error) {
-        console.error('Error processing LINE event:', error)
-        // Continue processing other events even if one fails
+        console.error('Error queuing LINE event:', error)
+        // Continue queuing other events even if one fails
       }
     }
 
@@ -66,164 +117,5 @@ webhook.post('/', async (c) => {
   }
 })
 
-/**
- * Process individual LINE events
- */
-async function processEvent(event: LineEvent): Promise<void> {
-  console.log(`Processing LINE event: ${event.type}`)
-
-  switch (event.type) {
-    case 'message':
-      await handleMessageEvent(event as LineMessageEvent)
-      break
-
-    case 'follow':
-      await handleFollowEvent(event)
-      break
-
-    case 'unfollow':
-      await handleUnfollowEvent(event)
-      break
-
-    case 'join':
-      await handleJoinEvent(event)
-      break
-
-    case 'leave':
-      await handleLeaveEvent(event)
-      break
-
-    case 'postback':
-      await handlePostbackEvent(event)
-      break
-
-    default:
-      console.log(`Unhandled event type: ${event.type}`)
-  }
-}
-
-/**
- * Handle incoming message events
- */
-async function handleMessageEvent(event: LineMessageEvent): Promise<void> {
-  if (!event.source.userId) {
-    console.log('Message event without user ID, skipping')
-    return
-  }
-
-  // Delegate to message handler
-  await messageHandler.handleMessage(event)
-}
-
-/**
- * Handle user follow events
- */
-async function handleFollowEvent(event: LineEvent): Promise<void> {
-  if (!event.source.userId) {
-    console.log('Follow event without user ID, skipping')
-    return
-  }
-
-  console.log(`User ${event.source.userId} followed the bot`)
-
-  try {
-    // Get user profile
-    const lineService = new LineMessagingService(config.line.channelAccessToken)
-    const profile = await lineService.getProfile(event.source.userId)
-
-    console.log(`New follower: ${profile.displayName} (${profile.userId})`)
-
-    // Send welcome message if reply token is available
-    if (event.replyToken) {
-      const welcomeMessage = LineMessagingService.createTextMessage(
-        `สวัสดี ${profile.displayName}! 👋\n\nยินดีต้อนรับเข้าสู่ระบบ Invoice OCR\nคุณสามารถส่งรูปภาพใบเสร็จมาให้เราช่วยแปลงข้อมูลได้เลย!`
-      )
-
-      await lineService.replyMessage(event.replyToken, [welcomeMessage])
-    }
-
-    // TODO: Save user to database
-
-  } catch (error) {
-    console.error('Error handling follow event:', error)
-  }
-}
-
-/**
- * Handle user unfollow events
- */
-async function handleUnfollowEvent(event: LineEvent): Promise<void> {
-  if (!event.source.userId) {
-    console.log('Unfollow event without user ID, skipping')
-    return
-  }
-
-  console.log(`User ${event.source.userId} unfollowed the bot`)
-
-  // TODO: Update user status in database
-}
-
-/**
- * Handle bot join group/room events
- */
-async function handleJoinEvent(event: LineEvent): Promise<void> {
-  console.log(`Bot joined group/room: ${event.source.groupId || event.source.roomId}`)
-
-  try {
-    // Send introduction message if reply token is available
-    if (event.replyToken) {
-      const lineService = new LineMessagingService(config.line.channelAccessToken)
-      const introMessage = LineMessagingService.createTextMessage(
-        'สวัสดีครับ! 👋\n\nผมเป็นบอทช่วยแปลงข้อมูลจากใบเสร็จ\nส่งรูปภาพใบเสร็จมาให้ผมช่วยแปลงข้อมูลได้เลยครับ!'
-      )
-
-      await lineService.replyMessage(event.replyToken, [introMessage])
-    }
-  } catch (error) {
-    console.error('Error handling join event:', error)
-  }
-}
-
-/**
- * Handle bot leave group/room events
- */
-async function handleLeaveEvent(event: LineEvent): Promise<void> {
-  console.log(`Bot left group/room: ${event.source.groupId || event.source.roomId}`)
-  // No action needed for leave events
-}
-
-/**
- * Handle postback events (from buttons, quick replies, etc.)
- */
-async function handlePostbackEvent(event: LineEvent): Promise<void> {
-  if (!event.postback) {
-    console.log('Postback event without postback data, skipping')
-    return
-  }
-
-  console.log(`Postback received: ${event.postback.data}`)
-
-  try {
-    // Parse postback data
-    const postbackData = event.postback.data
-    const userId = event.source.userId
-
-    if (!userId) {
-      console.log('Postback event without user ID, skipping')
-      return
-    }
-
-    // Handle different postback actions
-    if (postbackData.startsWith('action=')) {
-      const action = postbackData.split('=')[1]
-
-      // TODO: Implement specific postback actions
-      console.log(`Processing postback action: ${action}`)
-    }
-
-  } catch (error) {
-    console.error('Error handling postback event:', error)
-  }
-}
 
 export { webhook }
