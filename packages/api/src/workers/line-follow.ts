@@ -43,8 +43,8 @@ class LineFollowWorker {
       {
         connection: redis,
         concurrency: 5,
-        removeOnComplete: 100,
-        removeOnFail: 50
+        removeOnComplete: { count: 100 },
+        removeOnFail: { count: 50 }
       }
     )
 

@@ -262,36 +262,125 @@
               </tbody>
             </table>
 
-          <!-- Pagination -->
-          <div v-if="totalPages > 1" class="flex justify-center items-center p-6 bg-base-200 border-t">
-            <div class="join">
-              <button class="join-item btn btn-sm" @click="prevPage" :disabled="currentPage === 1">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-                </svg>
-              </button>
-
-              <template v-for="page in visiblePages" :key="page">
-                <button
-                  v-if="page !== '...'"
-                  class="join-item btn btn-sm"
-                  :class="{ 'btn-active': page === currentPage }"
-                  @click="goToPage(page as number)"
-                >
-                  {{ page }}
-                </button>
-                <span v-else class="join-item btn btn-sm btn-disabled">...</span>
-              </template>
-
-              <button class="join-item btn btn-sm" @click="nextPage" :disabled="currentPage === totalPages">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                </svg>
-              </button>
+          <!-- Enhanced Pagination -->
+          <div v-if="totalPages > 1" class="bg-base-100 border-t border-base-300">
+            <!-- Mobile Pagination Info -->
+            <div class="flex justify-center items-center p-4 lg:hidden">
+              <div class="text-sm text-base-content/70">
+                Page {{ currentPage }} of {{ totalPages }}
+                <span class="hidden sm:inline">({{ total.toLocaleString() }} users)</span>
+              </div>
             </div>
 
-            <div class="ml-4 text-sm text-base-content/70">
-              Page {{ currentPage }} of {{ totalPages }} ({{ total.toLocaleString() }} users)
+            <!-- Pagination Controls -->
+            <div class="flex flex-col lg:flex-row justify-center lg:justify-between items-center p-4 lg:p-6 gap-4">
+              <!-- Main Pagination -->
+              <div class="join" role="navigation" aria-label="Pagination Navigation">
+                <!-- First Page Button -->
+                <button
+                  class="join-item btn btn-sm"
+                  @click="goToPage(1)"
+                  :disabled="currentPage === 1"
+                  :aria-label="'Go to first page'"
+                  title="First page"
+                  v-if="totalPages > 7 && currentPage > 4"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7M18 19l-7-7 7-7"></path>
+                  </svg>
+                </button>
+
+                <!-- Previous Page Button -->
+                <button
+                  class="join-item btn btn-sm"
+                  @click="prevPage"
+                  :disabled="currentPage === 1"
+                  :aria-label="'Go to previous page'"
+                  title="Previous page"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                  </svg>
+                </button>
+
+                <!-- Page Numbers -->
+                <template v-for="page in visiblePages" :key="page">
+                  <button
+                    v-if="page !== '...'"
+                    class="join-item btn btn-sm"
+                    :class="{
+                      'btn-active': page === currentPage,
+                      'btn-primary': page === currentPage
+                    }"
+                    @click="goToPage(page as number)"
+                    :aria-label="`Go to page ${page}`"
+                    :aria-current="page === currentPage ? 'page' : undefined"
+                  >
+                    {{ page }}
+                  </button>
+                  <span
+                    v-else
+                    class="join-item flex items-center justify-center w-10 h-8 text-base-content/40"
+                    aria-hidden="true"
+                  >
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                      <circle cx="5" cy="12" r="2"></circle>
+                      <circle cx="12" cy="12" r="2"></circle>
+                      <circle cx="19" cy="12" r="2"></circle>
+                    </svg>
+                  </span>
+                </template>
+
+                <!-- Next Page Button -->
+                <button
+                  class="join-item btn btn-sm"
+                  @click="nextPage"
+                  :disabled="currentPage === totalPages"
+                  :aria-label="'Go to next page'"
+                  title="Next page"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                  </svg>
+                </button>
+
+                <!-- Last Page Button -->
+                <button
+                  class="join-item btn btn-sm"
+                  @click="goToPage(totalPages)"
+                  :disabled="currentPage === totalPages"
+                  :aria-label="'Go to last page'"
+                  title="Last page"
+                  v-if="totalPages > 7 && currentPage < totalPages - 3"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M6 5l7 7-7 7"></path>
+                  </svg>
+                </button>
+              </div>
+
+              <!-- Desktop Pagination Info -->
+              <div class="hidden lg:flex items-center gap-4">
+                <!-- Page Info -->
+                <div class="text-sm text-base-content/70">
+                  Showing {{ ((currentPage - 1) * 20) + 1 }} to {{ Math.min(currentPage * 20, total) }} of {{ total.toLocaleString() }} users
+                </div>
+
+                <!-- Quick Jump (for large datasets) -->
+                <div v-if="totalPages > 10" class="flex items-center gap-2">
+                  <span class="text-sm text-base-content/60">Jump to:</span>
+                  <input
+                    type="number"
+                    class="input input-xs input-bordered w-16 text-center"
+                    :min="1"
+                    :max="totalPages"
+                    :value="currentPage"
+                    @keyup.enter="handleJumpToPage($event)"
+                    @blur="handleJumpToPage($event)"
+                    title="Enter page number"
+                  />
+                </div>
+              </div>
             </div>
           </div>
     </div>
@@ -403,6 +492,16 @@ function clearFilters() {
   searchUsers('')
   setFollowingFilter(undefined)
   setSorting('lastSeenAt', 'desc')
+}
+
+function handleJumpToPage(event: Event) {
+  const target = event.target as HTMLInputElement
+  const pageNum = parseInt(target.value)
+  if (pageNum >= 1 && pageNum <= totalPages.value && pageNum !== currentPage.value) {
+    goToPage(pageNum)
+  } else {
+    target.value = currentPage.value.toString()
+  }
 }
 
 function viewUserDetails(userId: string) {

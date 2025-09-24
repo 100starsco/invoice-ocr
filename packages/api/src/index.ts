@@ -9,6 +9,7 @@ import { config } from './config'
 import { queues } from './queues'
 import { webhook } from './routes/webhook'
 import { admin } from './routes/admin'
+import { docs } from './routes/docs'
 import './workers/line-event'  // Enable LINE event worker
 import './workers/line-message-incoming'  // Enable LINE incoming message worker
 import './workers/line-follow'  // Enable LINE follow worker
@@ -51,6 +52,9 @@ api.route('/webhook', webhook)
 // Admin routes
 api.route('/admin', admin)
 
+// Documentation routes
+api.route('/docs', docs)
+
 // Mount API routes with /api prefix
 app.route('/api', api)
 
@@ -61,7 +65,8 @@ app.get('/', (c) => {
     endpoints: {
       health: '/api/health',
       webhook: '/api/webhook',
-      admin: '/api/admin'
+      admin: '/api/admin',
+      docs: '/api/docs/ui'
     }
   })
 })

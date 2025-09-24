@@ -9,7 +9,7 @@ export interface JwtPayload {
 }
 
 export class JwtService {
-  private static readonly SECRET = config.auth?.jwtSecret || process.env.JWT_SECRET || 'your-secret-key'
+  private static readonly SECRET = process.env.JWT_SECRET || 'your-secret-key'
   private static readonly EXPIRES_IN = '7d'
 
   static generateToken(payload: Omit<JwtPayload, 'iat' | 'exp'>): string {

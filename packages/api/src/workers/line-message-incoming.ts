@@ -43,8 +43,8 @@ class LineMessageIncomingWorker {
       {
         connection: redis,
         concurrency: 10, // Higher concurrency for messages
-        removeOnComplete: 100,
-        removeOnFail: 50
+        removeOnComplete: { count: 100 },
+        removeOnFail: { count: 50 }
       }
     )
 

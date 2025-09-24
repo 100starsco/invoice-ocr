@@ -48,6 +48,33 @@ export interface QueueConfig {
   }
 }
 
+export interface StorageConfig {
+  provider: 'spaces' | 's3' | 'local'
+  spaces?: {
+    endpoint: string
+    region: string
+    accessKeyId: string
+    secretAccessKey: string
+    bucket: string
+    cdnUrl?: string
+  }
+  s3?: {
+    endpoint?: string
+    region: string
+    accessKeyId: string
+    secretAccessKey: string
+    bucket: string
+  }
+  local?: {
+    uploadPath: string
+    baseUrl: string
+  }
+  limits: {
+    maxFileSize: number // in bytes
+    allowedMimeTypes: string[]
+  }
+}
+
 export interface ServiceConfig {
   ocrServiceUrl: string
 }
@@ -70,4 +97,5 @@ export interface ApiConfig {
   database: DatabaseConfig
   queue: QueueConfig
   services: ServiceConfig
+  storage: StorageConfig
 }

@@ -44,8 +44,8 @@ class LineUserWorker {
       {
         connection: redis,
         concurrency: 3,
-        removeOnComplete: 100,
-        removeOnFail: 50
+        removeOnComplete: { count: 100 },
+        removeOnFail: { count: 50 }
       }
     )
 

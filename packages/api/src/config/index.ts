@@ -4,6 +4,7 @@ import { lineConfig } from './line'
 import { databaseConfig } from './database'
 import { queueConfig } from './queue'
 import { serviceConfig } from './services'
+import { storageConfig } from './storage'
 import { validateConfig } from './validator'
 import type { ApiConfig } from './types'
 
@@ -13,7 +14,8 @@ export const config: ApiConfig = {
   line: lineConfig,
   database: databaseConfig,
   queue: queueConfig,
-  services: serviceConfig
+  services: serviceConfig,
+  storage: storageConfig
 }
 
 // Validate configuration on module load
