@@ -77,6 +77,20 @@ services:
     networks:
       - invoice-net
 
+  rq-dashboard:
+    build:
+      context: ./services/ocr-service
+      dockerfile: Dockerfile.dashboard
+    ports:
+      - "9181:9181"
+    environment:
+      - RQ_DASHBOARD_PORT=9181
+      - RQ_DASHBOARD_REDIS_URL=redis://host.docker.internal:6379
+      - LOG_LEVEL=INFO
+    networks:
+      - invoice-net
+    restart: unless-stopped
+
 networks:
   invoice-net:
     driver: bridge
