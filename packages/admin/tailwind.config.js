@@ -6,22 +6,13 @@ export default {
   },
   plugins: [require('daisyui')],
   daisyui: {
-    themes: [
-      'light',
-      'dark',
-      'cupcake',
-      'corporate',
-      'business',
-      'synthwave',
-      'retro',
-      'cyberpunk'
-    ],
-    darkTheme: 'dark',
+    themes: ['light'],
+    darkTheme: false,
     base: true,
     styled: true,
     utils: true,
     prefix: '',
-    logs: true,
+    logs: false,
     themeRoot: ':root'
   }
 }

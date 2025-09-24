@@ -4,6 +4,11 @@ import './style.css'
 import App from './App.vue'
 import router from './router'
 
+// Set light theme as default
+if (typeof document !== 'undefined') {
+  document.documentElement.setAttribute('data-theme', 'light')
+}
+
 const app = createApp(App)
 const pinia = createPinia()
 
