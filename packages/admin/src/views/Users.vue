@@ -114,11 +114,10 @@
         </div>
 
         <!-- Users Table -->
-        <div v-else class="bg-base-100 rounded-lg shadow-lg overflow-hidden">
-          <div class="overflow-x-auto">
-            <table class="table table-zebra w-full">
+        <div v-else class="bg-base-100 rounded-box shadow-lg border border-base-300">
+          <table class="table table-zebra table-sm table-pin-rows w-full">
               <thead>
-                <tr class="bg-base-200">
+                <tr class="bg-base-300 text-base-content border-b border-base-300">
                   <th class="w-16">#</th>
                   <th>User</th>
                   <th>Status</th>
@@ -129,36 +128,35 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(user, index) in users" :key="user.id" class="hover">
+                <tr v-for="(user, index) in users" :key="user.id" class="hover:bg-base-200 transition-colors duration-200 cursor-pointer" @click="viewUserDetails(user.userId)">
                   <!-- Row Number -->
                   <td class="font-mono text-sm text-base-content/60">
                     {{ offset + index + 1 }}
                   </td>
 
                   <!-- User Info -->
-                  <td>
+                  <td class="min-w-0">
                     <div class="flex items-center gap-3">
-                      <div class="avatar">
-                        <div class="mask mask-squircle w-12 h-12">
+                      <div class="avatar placeholder">
+                        <div class="mask mask-squircle w-10 h-10 bg-base-300">
                           <img
                             v-if="user.pictureUrl"
                             :src="user.pictureUrl"
                             :alt="getUserDisplayName(user)"
-                            class="object-cover"
+                            class="object-cover w-full h-full"
+                            loading="lazy"
                           />
-                          <div v-else class="bg-primary text-primary-content flex items-center justify-center">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                            </svg>
+                          <div v-else class="bg-primary text-primary-content text-sm font-bold flex items-center justify-center">
+                            {{ getUserDisplayName(user).charAt(0).toUpperCase() }}
                           </div>
                         </div>
                       </div>
-                      <div>
-                        <div class="font-bold">{{ getUserDisplayName(user) }}</div>
-                        <div class="text-sm text-base-content/70 font-mono">
-                          {{ user.userId.substring(0, 12) }}...
+                      <div class="min-w-0 flex-1">
+                        <div class="font-semibold text-base-content truncate">{{ getUserDisplayName(user) }}</div>
+                        <div class="text-xs text-base-content/60 font-mono truncate">
+                          {{ user.userId.substring(0, 16) }}...
                         </div>
-                        <div v-if="user.statusMessage" class="text-xs text-base-content/60 mt-1 max-w-48 truncate">
+                        <div v-if="user.statusMessage" class="text-xs text-base-content/50 mt-0.5 truncate max-w-40">
                           {{ user.statusMessage }}
                         </div>
                       </div>
@@ -167,11 +165,15 @@
 
                   <!-- Status -->
                   <td>
-                    <div class="flex flex-col gap-1">
-                      <div class="badge badge-sm" :class="getUserStatusColor(user)">
-                        {{ user.isFollowing ? 'Following' : 'Not Following' }}
+                    <div class="flex flex-col gap-1.5">
+                      <div class="badge badge-xs" :class="getUserStatusColor(user)">
+                        <div class="w-1.5 h-1.5 rounded-full mr-1" :class="user.isFollowing ? 'bg-success-content' : 'bg-error-content'"></div>
+                        {{ user.isFollowing ? 'Following' : 'Unfollowed' }}
                       </div>
-                      <div v-if="user.isBlocked" class="badge badge-error badge-sm">
+                      <div v-if="user.isBlocked" class="badge badge-error badge-xs">
+                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L18.364 5.636M5.636 18.364l12.728-12.728"></path>
+                        </svg>
                         Blocked
                       </div>
                     </div>
@@ -179,12 +181,21 @@
 
                   <!-- Activity -->
                   <td>
-                    <div class="text-sm">
-                      <div class="font-medium">{{ formatLastSeen(user.lastSeenAt) }}</div>
-                      <div v-if="user.lastMessageAt" class="text-xs text-base-content/60">
-                        Last message: {{ formatLastSeen(user.lastMessageAt) }}
+                    <div class="space-y-1">
+                      <div class="text-xs font-medium text-base-content">
+                        <span class="text-base-content/60">Last seen:</span>
+                        {{ formatLastSeen(user.lastSeenAt) }}
+                      </div>
+                      <div v-if="user.lastMessageAt" class="text-xs text-success">
+                        <svg class="w-3 h-3 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                        </svg>
+                        {{ formatLastSeen(user.lastMessageAt) }}
                       </div>
                       <div v-else class="text-xs text-base-content/40">
+                        <svg class="w-3 h-3 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+                        </svg>
                         No messages
                       </div>
                     </div>
@@ -192,37 +203,64 @@
 
                   <!-- Joined Date -->
                   <td class="hidden lg:table-cell">
-                    <div class="text-sm">
-                      {{ new Date(user.firstSeenAt).toLocaleDateString() }}
+                    <div class="text-xs space-y-0.5">
+                      <div class="font-medium text-base-content">
+                        {{ new Date(user.firstSeenAt).toLocaleDateString() }}
+                      </div>
+                      <div class="text-base-content/60">
+                        {{ new Date(user.firstSeenAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }}
+                      </div>
                     </div>
                   </td>
 
                   <!-- Message Count -->
                   <td class="hidden xl:table-cell">
-                    <div class="badge badge-outline badge-sm">
-                      N/A
+                    <div class="stat">
+                      <div class="stat-value text-sm text-primary">N/A</div>
+                      <div class="stat-desc text-xs">messages</div>
                     </div>
                   </td>
 
                   <!-- Actions -->
-                  <td>
-                    <div class="dropdown dropdown-end">
-                      <label tabindex="0" class="btn btn-ghost btn-sm">
+                  <td class="relative">
+                    <div class="dropdown dropdown-end dropdown-bottom" @click.stop>
+                      <label tabindex="0" class="btn btn-ghost btn-xs btn-circle">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path>
                         </svg>
                       </label>
-                      <ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-40">
-                        <li><a @click="viewUserDetails(user.userId)">View Details</a></li>
-                        <li><a>View Messages</a></li>
-                        <li><a>Export Data</a></li>
+                      <ul tabindex="0" class="dropdown-content menu menu-sm p-2 shadow-lg bg-base-100 rounded-box w-44 border border-base-300 z-[1000]">
+                        <li>
+                          <a @click="viewUserDetails(user.userId)" class="text-xs">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                            </svg>
+                            View Details
+                          </a>
+                        </li>
+                        <li>
+                          <a class="text-xs">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                            </svg>
+                            View Messages
+                          </a>
+                        </li>
+                        <li>
+                          <a class="text-xs">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            Export Data
+                          </a>
+                        </li>
                       </ul>
                     </div>
                   </td>
                 </tr>
               </tbody>
             </table>
-          </div>
 
           <!-- Pagination -->
           <div v-if="totalPages > 1" class="flex justify-center items-center p-6 bg-base-200 border-t">
