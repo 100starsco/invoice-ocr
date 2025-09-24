@@ -1,0 +1,45 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment files
+.env
+.env.*
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Local uploads folder
+uploads/
+
+# Logs
+*.log
+logs/
+
+# Coverage
+coverage/
+
+# Test files
+*.test.*
+*.spec.*
+
+# Documentation
+*.md
+docs/
+
+# Temporary files
+tmp/
+temp/
