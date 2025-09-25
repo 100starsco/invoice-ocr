@@ -17,8 +17,18 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/CameraCapture.vue'),
     meta: {
       title: 'Capture Invoice',
-      requiresAuth: true,
-      requiresLiff: true
+      requiresAuth: false,
+      requiresLiff: false
+    }
+  },
+  {
+    path: '/preview',
+    name: 'preview',
+    component: () => import('@/views/ImagePreview.vue'),
+    meta: {
+      title: 'Preview Image',
+      requiresAuth: false,
+      requiresLiff: false
     }
   },
   {

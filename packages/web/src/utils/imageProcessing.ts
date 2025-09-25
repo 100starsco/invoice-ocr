@@ -1,4 +1,4 @@
-const Pica = require('pica');
+import Pica from 'pica';
 
 export interface ResizeOptions {
   width?: number;

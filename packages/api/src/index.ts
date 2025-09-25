@@ -10,6 +10,7 @@ import { queues } from './queues'
 import { webhook } from './routes/webhook'
 import { admin } from './routes/admin'
 import { docs } from './routes/docs'
+import { liff } from './routes/liff'
 import './workers/line-event'  // Enable LINE event worker
 import './workers/line-message-incoming'  // Enable LINE incoming message worker
 import './workers/line-follow'  // Enable LINE follow worker
@@ -52,6 +53,9 @@ api.route('/webhook', webhook)
 // Admin routes
 api.route('/admin', admin)
 
+// LIFF routes
+api.route('/liff', liff)
+
 // Documentation routes
 api.route('/docs', docs)
 
@@ -66,6 +70,7 @@ app.get('/', (c) => {
       health: '/api/health',
       webhook: '/api/webhook',
       admin: '/api/admin',
+      liff: '/api/liff',
       docs: '/api/docs/ui'
     }
   })

@@ -10,7 +10,12 @@ export default defineConfig({
     }
   },
   server: {
-    port: 5173,
-    host: true
+    port: 5176,
+    host: '0.0.0.0', // Allow all hosts
+    allowedHosts: ['fn.100s.dev', 'localhost'],
+    hmr: {
+      port: 5176,
+      host: 'fn.100s.dev'
+    }
   }
 })
