@@ -52,17 +52,27 @@ async def lifespan(app: FastAPI):
         # Initialize database connections
         global mongodb_client, redis_client
 
-        # TODO: Initialize MongoDB client
-        # mongodb_client = MongoDBClient(config.database.mongodb_uri)
-        # await mongodb_client.connect()
+        # Initialize MongoDB client
+        from app.database.mongodb import MongoDBClient
+        mongodb_client = MongoDBClient(
+            connection_url=config.database.mongodb_uri,
+            database_name="ocr_results"
+        )
+        await mongodb_client.connect()
+        logger.info("MongoDB connection established")
 
-        # TODO: Initialize Redis client
-        # redis_client = RedisClient(config.redis.redis_url)
-        # await redis_client.connect()
+        # Initialize Redis client
+        from app.database.redis_client import get_redis_connection
+        redis_conn = get_redis_connection()
+        redis_conn.ping()  # Test connection
+        logger.info("Redis connection established")
 
-        # TODO: Initialize OCR engine
-        # ocr_engine = OCREngine(language=config.ocr.language)
-        # ocr_engine.initialize()
+        # Initialize OCR engine globally (optional - engines are created per job)
+        from app.core.ocr_engine import OCREngine
+        test_ocr_engine = OCREngine(language=config.ocr.language)
+        test_ocr_engine.initialize()
+        test_ocr_engine.cleanup()  # Just test initialization
+        logger.info("OCR engine initialization test passed")
 
         logger.info("OCR Service started successfully")
 
@@ -76,11 +86,12 @@ async def lifespan(app: FastAPI):
     logger.info("Shutting down OCR Service...")
 
     try:
-        # TODO: Cleanup database connections
-        # if mongodb_client:
-        #     await mongodb_client.disconnect()
-        # if redis_client:
-        #     await redis_client.disconnect()
+        # Cleanup database connections
+        if mongodb_client:
+            await mongodb_client.disconnect()
+            logger.info("MongoDB connection closed")
+
+        logger.info("Redis connection closed (no explicit cleanup needed)")
 
         logger.info("OCR Service shutdown completed")
 
@@ -149,21 +160,60 @@ async def health_check() -> Dict[str, Any]:
         "timestamp": datetime.utcnow().isoformat(),
         "environment": config.environment.node_env,
         "components": {
-            "database": "unknown",  # TODO: Check MongoDB connection
-            "redis": "unknown",     # TODO: Check Redis connection
-            "ocr_engine": "unknown" # TODO: Check OCR engine status
+            "database": "unknown",
+            "redis": "unknown",
+            "ocr_engine": "unknown"
         }
     }
 
-    # TODO: Implement actual health checks
-    # try:
-    #     if mongodb_client and mongodb_client.is_connected:
-    #         health_status["components"]["database"] = "healthy"
-    #     if redis_client and redis_client.is_connected:
-    #         health_status["components"]["redis"] = "healthy"
-    # except Exception as e:
-    #     logger.error(f"Health check failed: {e}")
-    #     health_status["status"] = "degraded"
+    # Check component health
+    try:
+        # Check MongoDB connection
+        if mongodb_client and mongodb_client.is_connected:
+            db_health = await mongodb_client.health_check()
+            health_status["components"]["database"] = db_health["status"]
+            if db_health["status"] != "healthy":
+                health_status["status"] = "degraded"
+        else:
+            health_status["components"]["database"] = "disconnected"
+            health_status["status"] = "degraded"
+
+        # Check Redis connection
+        if redis_client and hasattr(redis_client, 'is_connected') and redis_client.is_connected:
+            # Test Redis with a ping
+            try:
+                from .app.database.redis_client import get_redis_connection
+                redis_conn = get_redis_connection()
+                redis_conn.ping()
+                health_status["components"]["redis"] = "healthy"
+            except Exception:
+                health_status["components"]["redis"] = "unhealthy"
+                health_status["status"] = "degraded"
+        else:
+            health_status["components"]["redis"] = "disconnected"
+            health_status["status"] = "degraded"
+
+        # Check OCR engine (test initialization)
+        try:
+            from app.core.ocr_engine import OCREngine
+            # Use configured language for health check
+            test_engine = OCREngine(language=config.ocr.language, use_gpu=False)
+            test_engine.initialize()
+            if test_engine.is_initialized():
+                health_status["components"]["ocr_engine"] = "healthy"
+            else:
+                health_status["components"]["ocr_engine"] = "unhealthy"
+                health_status["status"] = "degraded"
+            test_engine.cleanup()
+        except Exception as e:
+            logger.warning(f"OCR engine health check failed: {e}")
+            health_status["components"]["ocr_engine"] = "unhealthy"
+            health_status["status"] = "degraded"
+
+    except Exception as e:
+        logger.error(f"Health check failed: {e}")
+        health_status["status"] = "unhealthy"
+        health_status["error"] = str(e)
 
     return health_status
 
@@ -176,22 +226,83 @@ async def get_metrics() -> Dict[str, Any]:
     Returns:
         Performance and usage metrics
     """
-    # TODO: Implement metrics collection
-    return {
-        "jobs_processed": 0,
-        "avg_processing_time": 0.0,
-        "active_workers": 0,
-        "queue_length": 0,
-        "error_rate": 0.0,
-        "uptime": 0,
-        "memory_usage": 0,
-        "cpu_usage": 0.0
-    }
+    import psutil
+    import time
+    from datetime import datetime, timezone
+
+    try:
+        metrics = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "service": "ocr-service",
+            "version": "1.0.0"
+        }
+
+        # System metrics
+        process = psutil.Process()
+        metrics["system"] = {
+            "memory_usage_mb": round(process.memory_info().rss / 1024 / 1024, 2),
+            "memory_percent": round(process.memory_percent(), 2),
+            "cpu_percent": round(process.cpu_percent(), 2),
+            "uptime_seconds": round(time.time() - process.create_time()),
+            "threads": process.num_threads()
+        }
+
+        # Database metrics
+        if mongodb_client and mongodb_client.is_connected:
+            try:
+                db_stats = await mongodb_client.get_processing_stats()
+                metrics["database"] = {
+                    "total_jobs": db_stats.get("total_jobs", 0),
+                    "completed_jobs": db_stats.get("completed_jobs", 0),
+                    "failed_jobs": db_stats.get("failed_jobs", 0),
+                    "success_rate": db_stats.get("success_rate", 0.0),
+                    "total_ocr_results": db_stats.get("total_ocr_results", 0),
+                    "average_confidence": db_stats.get("average_confidence", 0.0)
+                }
+            except Exception as e:
+                logger.warning(f"Failed to get database metrics: {e}")
+                metrics["database"] = {"status": "error", "error": str(e)}
+        else:
+            metrics["database"] = {"status": "disconnected"}
+
+        # Queue metrics (if Redis is available)
+        if redis_client:
+            try:
+                from .app.database.redis_client import get_redis_connection
+                from rq import Queue
+
+                redis_conn = get_redis_connection()
+                ocr_queue = Queue('ocr', connection=redis_conn)
+                ocr_extraction_queue = Queue('ocr_extraction', connection=redis_conn)
+
+                metrics["queues"] = {
+                    "ocr_queue_length": len(ocr_queue),
+                    "ocr_extraction_queue_length": len(ocr_extraction_queue),
+                    "total_queued_jobs": len(ocr_queue) + len(ocr_extraction_queue)
+                }
+            except Exception as e:
+                logger.warning(f"Failed to get queue metrics: {e}")
+                metrics["queues"] = {"status": "error", "error": str(e)}
+        else:
+            metrics["queues"] = {"status": "disconnected"}
+
+        return metrics
+
+    except Exception as e:
+        logger.error(f"Metrics collection failed: {e}")
+        return {
+            "error": str(e),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "status": "metrics_error"
+        }
 
 
-# TODO: Add API routes
-# app.include_router(ocr_router, prefix="/api/v1/ocr", tags=["OCR"])
-# app.include_router(jobs_router, prefix="/api/v1/jobs", tags=["Jobs"])
+# Add API routes
+from app.api.jobs import router as jobs_router
+from app.api.images import router as images_router
+
+app.include_router(jobs_router, prefix="/api/v1", tags=["Jobs"])
+app.include_router(images_router, tags=["Images"])
 
 
 def create_app() -> FastAPI:

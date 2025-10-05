@@ -367,6 +367,86 @@ export class StorageService {
   }
 
   /**
+   * Get image stream from storage for proxy endpoint
+   */
+  async getImageStream(key: string): Promise<ReadableStream> {
+    switch (this.storageConfig.provider) {
+      case 'spaces':
+      case 's3':
+        return this.getStreamFromS3(key)
+
+      case 'local':
+        return this.getStreamFromLocal(key)
+
+      default:
+        throw new Error(`Unsupported storage provider: ${this.storageConfig.provider}`)
+    }
+  }
+
+  /**
+   * Get file stream from S3-compatible storage
+   */
+  private async getStreamFromS3(key: string): Promise<ReadableStream> {
+    if (!this.s3Client) {
+      throw new Error('S3 client not initialized')
+    }
+
+    const bucket = this.storageConfig.provider === 'spaces'
+      ? this.storageConfig.spaces!.bucket
+      : this.storageConfig.s3!.bucket
+
+    const command = new GetObjectCommand({
+      Bucket: bucket,
+      Key: key
+    })
+
+    const response: GetObjectCommandOutput = await this.s3Client.send(command)
+
+    if (!response.Body) {
+      throw new Error(`File not found: ${key}`)
+    }
+
+    // Return the stream directly
+    return response.Body.transformToWebStream()
+  }
+
+  /**
+   * Get file stream from local storage
+   */
+  private async getStreamFromLocal(key: string): Promise<ReadableStream> {
+    const { uploadPath } = this.storageConfig.local!
+    const filePath = join(uploadPath, key)
+
+    // Check if file exists first
+    try {
+      await fs.access(filePath)
+    } catch {
+      throw new Error(`File not found: ${key}`)
+    }
+
+    // Create a readable stream from the file
+    const { createReadStream } = await import('fs')
+    const fileStream = createReadStream(filePath)
+
+    // Convert Node.js ReadableStream to Web ReadableStream
+    return new ReadableStream({
+      start(controller) {
+        fileStream.on('data', (chunk) => {
+          controller.enqueue(new Uint8Array(chunk))
+        })
+
+        fileStream.on('end', () => {
+          controller.close()
+        })
+
+        fileStream.on('error', (err) => {
+          controller.error(err)
+        })
+      }
+    })
+  }
+
+  /**
    * Check if file exists
    */
   async fileExists(key: string): Promise<boolean> {

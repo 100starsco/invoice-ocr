@@ -14,7 +14,13 @@ class OCRConfig:
     language: str
     use_gpu: bool = False
     max_image_size: int = 2048
-    confidence_threshold: float = 0.8
+    confidence_threshold: float = 0.3
+    debug_mode: bool = False
+    use_angle_cls: bool = True
+    use_space_char: bool = True
+    dual_pass: bool = True  # Enable dual-pass OCR for bilingual support
+    det_db_thresh: float = 0.2  # Detection threshold (lower = more sensitive)
+    drop_score: float = 0.3  # Drop results below this confidence
 
 @dataclass
 class QueueConfig:

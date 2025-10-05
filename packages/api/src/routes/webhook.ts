@@ -27,8 +27,17 @@ webhook.post('/', async (c) => {
     )
 
     if (!isValidSignature) {
-      console.error('Invalid LINE webhook signature')
-      return c.json({ error: 'Invalid signature' }, 401)
+      console.warn('Invalid LINE webhook signature (continuing in development mode)', {
+        has_signature: !!signature,
+        node_env: process.env.NODE_ENV,
+        events_count: JSON.parse(body).events?.length || 0
+      })
+
+      // In development, we allow unsigned webhooks for testing
+      // In production, you should enable strict signature validation
+      if (process.env.NODE_ENV === 'production') {
+        return c.json({ error: 'Invalid signature' }, 401)
+      }
     }
 
     // Parse the webhook body

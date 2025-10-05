@@ -8,9 +8,11 @@ import { HonoAdapter } from '@bull-board/hono'
 import { config } from './config'
 import { queues } from './queues'
 import { webhook } from './routes/webhook'
+import webhooks from './routes/webhooks'
 import { admin } from './routes/admin'
 import { docs } from './routes/docs'
 import { liff } from './routes/liff'
+import { images } from './routes/images'
 import './workers/line-event'  // Enable LINE event worker
 import './workers/line-message-incoming'  // Enable LINE incoming message worker
 import './workers/line-follow'  // Enable LINE follow worker
@@ -50,6 +52,9 @@ api.get('/health', (c) => {
 // LINE webhook routes
 api.route('/webhook', webhook)
 
+// External service webhooks (OCR, etc.)
+api.route('/webhooks', webhooks)
+
 // Admin routes
 api.route('/admin', admin)
 
@@ -58,6 +63,9 @@ api.route('/liff', liff)
 
 // Documentation routes
 api.route('/docs', docs)
+
+// Image proxy routes
+api.route('/images', images)
 
 // Mount API routes with /api prefix
 app.route('/api', api)
@@ -69,9 +77,11 @@ app.get('/', (c) => {
     endpoints: {
       health: '/api/health',
       webhook: '/api/webhook',
+      webhooks: '/api/webhooks',
       admin: '/api/admin',
       liff: '/api/liff',
-      docs: '/api/docs/ui'
+      docs: '/api/docs/ui',
+      images: '/api/images'
     }
   })
 })
