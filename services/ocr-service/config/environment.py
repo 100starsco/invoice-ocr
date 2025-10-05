@@ -1,5 +1,9 @@
 import os
+from dotenv import load_dotenv
 from .types import EnvironmentConfig
+
+# Load environment variables from .env file
+load_dotenv()
 
 def get_environment_config() -> EnvironmentConfig:
     env = os.getenv('ENV', 'development')

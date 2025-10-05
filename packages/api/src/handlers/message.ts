@@ -1,7 +1,7 @@
 import type { LineMessageEvent, LineTextMessage, LineImageMessage, LineStickerMessage, LineMessageJobData } from '@invoice-ocr/shared'
 import { LineMessagingService } from '../services/line'
 import { storageService } from '../services/storage'
-// import { notificationQueue } from '../queues'  // Disable for testing
+import { ocrServiceClient } from '../services/ocr-client'
 import { config } from '../config'
 import { db, lineUsers, lineMessages } from '../db'
 import { eq } from 'drizzle-orm'
@@ -99,9 +99,9 @@ class MessageHandler {
     console.log(`Image message received from user ${userId}`)
 
     try {
-      // Direct reply for testing (without queue)
+      // Send immediate acknowledgment
       await this.lineService.replyMessage(replyToken, [
-        LineMessagingService.createTextMessage('📸 ได้รับรูปภาพแล้ว! กำลังประมวลผล...')
+        LineMessagingService.createTextMessage('📸 ได้รับรูปภาพแล้ว! กำลังประมวลผลใบเสร็จ...\n⏱️ ใช้เวลาประมาณ 1-2 นาที')
       ])
 
       // Download image from LINE servers
@@ -118,7 +118,8 @@ class MessageHandler {
           metadata: {
             userId,
             messageId: message.id,
-            timestamp: Date.now().toString()
+            timestamp: Date.now().toString(),
+            source: 'line_webhook'
           }
         }
       )
@@ -126,30 +127,40 @@ class MessageHandler {
       console.log(`Image uploaded successfully: ${uploadResult.key}`)
       console.log(`Public URL: ${uploadResult.cdnUrl || uploadResult.url}`)
 
-      // Image uploaded successfully - ready for OCR processing
-      const imageData = {
-        key: uploadResult.key,
-        url: uploadResult.cdnUrl || uploadResult.url,
+      // Submit OCR job to OCR service
+      const jobId = await ocrServiceClient.processInvoice(
+        uploadResult.cdnUrl || uploadResult.url,
         userId,
-        messageId: message.id,
-        timestamp: Date.now(),
-        metadata: {
-          originalFilename: `line_image_${message.id}.jpg`,
-          source: 'line_webhook',
-          contentType: 'image/jpeg'
-        }
-      }
+        message.id
+      )
 
-      // TODO: Queue OCR processing job here with imageData
-      console.log(`Image ready for OCR processing:`, imageData)
+      console.log(`OCR job submitted: ${jobId} for user ${userId}`)
+
+      // Optional: Store job reference for tracking
+      // You could save this to database for later reference
+      console.log(`Image processing initiated - Job ID: ${jobId}`)
 
     } catch (error) {
       console.error('Error processing image:', error)
 
-      // Send error message to user
-      await this.lineService.replyMessage(replyToken, [
-        LineMessagingService.createTextMessage('❌ เกิดข้อผิดพลาดในการอัพโหลดรูปภาพ กรุณาลองใหม่อีกครั้ง')
-      ])
+      // Send detailed error message based on error type
+      let errorMessage = '❌ เกิดข้อผิดพลาดในการประมวลผลรูปภาพ'
+
+      if (error.message.includes('OCR service')) {
+        errorMessage += '\n🔧 ระบบประมวลผลขณะนี้ไม่พร้อมใช้งาน กรุณาลองใหม่ในอีกสักครู่'
+      } else if (error.message.includes('upload') || error.message.includes('storage')) {
+        errorMessage += '\n📤 ไม่สามารถอัพโหลดรูปภาพได้ กรุณาตรวจสอบขนาดไฟล์และลองใหม่'
+      } else {
+        errorMessage += '\n🔄 กรุณาลองส่งรูปใหม่อีกครั้ง หรือติดต่อผู้ดูแลระบบ'
+      }
+
+      try {
+        await this.lineService.pushMessage(userId, [
+          LineMessagingService.createTextMessage(errorMessage)
+        ])
+      } catch (pushError) {
+        console.error('Failed to send error message via push:', pushError)
+      }
     }
   }
 
